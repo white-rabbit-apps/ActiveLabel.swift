@@ -24,10 +24,19 @@ public protocol ActiveLabelDelegate: class {
     @IBInspectable public var mentionSelectedColor: UIColor? {
         didSet { updateTextStorage(parseText: false) }
     }
+    @IBInspectable public var mentionBold: Bool = false {
+        didSet { updateTextStorage(parseText: false) }
+    }
+    @IBInspectable public var mentionRemoveAt: Bool = false {
+        didSet { updateTextStorage(parseText: false) }
+    }
     @IBInspectable public var hashtagColor: UIColor = .blueColor() {
         didSet { updateTextStorage(parseText: false) }
     }
     @IBInspectable public var hashtagSelectedColor: UIColor? {
+        didSet { updateTextStorage(parseText: false) }
+    }
+    @IBInspectable public var hashtagBold: Bool = false {
         didSet { updateTextStorage(parseText: false) }
     }
     @IBInspectable public var URLColor: UIColor = .blueColor() {
@@ -224,6 +233,9 @@ public protocol ActiveLabelDelegate: class {
         }
         
         self.addLinkAttribute(mutAttrString)
+        if(mentionRemoveAt) {
+            self.removeMentionAtSymbols(mutAttrString)
+        }
         self.textStorage.setAttributedString(mutAttrString)
         self.setNeedsDisplay()
     }
@@ -259,6 +271,43 @@ public protocol ActiveLabelDelegate: class {
                 mutAttrString.setAttributes(attributes, range: element.range)
             }
         }
+    }
+    
+    private func removeMentionAtSymbols(mutAttrString: NSMutableAttributedString) {
+        //        mutAttrString.mutableString.replaceOccurrencesOfString("@", withString: "", options: NSStringCompareOptions.CaseInsensitiveSearch, range: NSRange(location: 0,length: mutAttrString.length))
+        
+        //        if(!hasRemovedAt) {
+        for (index, var element) in activeElements[.Mention]!.enumerate() {
+            //                element = activeElements[.Mention]![index]
+            mutAttrString.mutableString.replaceOccurrencesOfString("@", withString: " ", options: NSStringCompareOptions.CaseInsensitiveSearch, range: element.range)
+        }
+        //    //            activeElements[.Mention]![index].range.length = element.range.length - 1
+        //                self.activeElements[.Mention]![index].range = NSRange(location: element.range.location, length: element.range.length - 1)
+        //
+        //                for (type, var allElements) in activeElements {
+        //                    for (i, var elmt) in allElements.enumerate() {
+        //                        elmt = activeElements[type]![i]
+        //                        if elmt.range.location > element.range.location {
+        //                            self.activeElements[type]![i].range = NSRange(location: elmt.range.location - 1, length: elmt.range.length)
+        //    //                        activeElements[type]![i].range.location = element.range.location - 1
+        //    //                        allElements[i].range.location = elmt.range.location - 1
+        //                        }
+        //                    }
+        //                }
+        
+        
+    }
+    
+    func boldFontFromFont(font: UIFont) -> UIFont? {
+        var familyName: String = font.familyName
+        var fontNames: [String] = UIFont.fontNamesForFamilyName(familyName)
+        for fontName: String in fontNames {
+            if (fontName.rangeOfString("black", options: .CaseInsensitiveSearch) != nil || fontName.rangeOfString("bold", options: .CaseInsensitiveSearch) != nil) {
+                var boldFont: UIFont = UIFont(name: fontName, size: font.pointSize)!
+                return boldFont
+            }
+        }
+        return nil
     }
     
     /// use regex check all link ranges
@@ -307,15 +356,39 @@ public protocol ActiveLabelDelegate: class {
         var attributes = textStorage.attributesAtIndex(0, effectiveRange: nil)
         if isSelected {
             switch selectedElement.element {
-            case .Mention(_): attributes[NSForegroundColorAttributeName] = mentionSelectedColor ?? mentionColor
-            case .Hashtag(_): attributes[NSForegroundColorAttributeName] = hashtagSelectedColor ?? hashtagColor
+            case .Mention(_):
+                attributes[NSForegroundColorAttributeName] = mentionColor
+                if(mentionBold) {
+                    attributes[NSFontAttributeName] = boldFontFromFont(font!)
+                } else {
+                    attributes[NSFontAttributeName] = font!
+                }
+            case .Hashtag(_):
+                attributes[NSForegroundColorAttributeName] = hashtagColor
+                if(hashtagBold) {
+                    attributes[NSFontAttributeName] = boldFontFromFont(font!)
+                } else {
+                    attributes[NSFontAttributeName] = font!
+                }
             case .URL(_): attributes[NSForegroundColorAttributeName] = URLSelectedColor ?? URLColor
             case .None: ()
             }
         } else {
             switch selectedElement.element {
-            case .Mention(_): attributes[NSForegroundColorAttributeName] = mentionColor
-            case .Hashtag(_): attributes[NSForegroundColorAttributeName] = hashtagColor
+            case .Mention(_):
+                attributes[NSForegroundColorAttributeName] = mentionSelectedColor ?? mentionColor
+                if(mentionBold) {
+                    attributes[NSFontAttributeName] = boldFontFromFont(font!)
+                } else {
+                    attributes[NSFontAttributeName] = font!
+                }
+            case .Hashtag(_):
+                attributes[NSForegroundColorAttributeName] = hashtagSelectedColor ?? hashtagColor
+                if(hashtagBold) {
+                    attributes[NSFontAttributeName] = boldFontFromFont(font!)
+                } else {
+                    attributes[NSFontAttributeName] = font!
+                }
             case .URL(_): attributes[NSForegroundColorAttributeName] = URLColor
             case .None: ()
             }
